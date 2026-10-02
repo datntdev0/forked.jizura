@@ -2,13 +2,13 @@
 
 Two steps, so a person (or an agent) can decide where the phrases break:
 
-    python phrase_lrc.py song.lrc --draft song.phrases.txt [--lyrics song.lyrics.txt]
-        writes a first guess, one phrase per row: lyric lines (from --lyrics, else a capital letter starts a line),
+    python phrase_lrc.py song.lrc --draft song.phrases.txt [--lyrics song.srt]
+        writes a first guess, one phrase per row: lyric lines (from --lyrics: text or .srt, else a capital letter starts a line),
         lines longer than --max-words split at a comma; long lines left without one are listed for the editor
 
     (edit song.phrases.txt: move the breaks, but keep every word in the same order)
 
-    python phrase_lrc.py song.lrc --phrases song.phrases.txt -o song.phrased.lrc
+    python phrase_lrc.py song.lrc --phrases song.phrases.txt -o song.phrase.lrc
         each phrase row starts at the time of its first word; [interlude] rows are kept;
         stops when the phrases do not match the words, and warns about phrases the aligner squeezed together
 """
@@ -18,6 +18,8 @@ import re
 import sys
 import unicodedata
 from pathlib import Path
+
+from lyric_text import read_lyric_lines
 
 TIME_ROW = re.compile(r"^\[(\d+):(\d+(?:\.\d+)?)\](.*)$")
 INTERLUDE = re.compile(r"^\[[^\]]*\]$")  # [interlude], [間奏 8], ... — no lyric text
@@ -45,10 +47,6 @@ def read_words(path: Path) -> list[tuple[float, str]]:
 
 def is_interlude(word: str) -> bool:
     return bool(INTERLUDE.match(word))
-
-
-def read_rows(path: Path) -> list[str]:
-    return [nfc(r.strip()) for r in path.read_text(encoding="utf-8").splitlines() if r.strip()]
 
 
 # ---------- draft ----------
@@ -126,20 +124,20 @@ def main():
     parser = argparse.ArgumentParser(description="Group a word-timed LRC into phrase rows for JIZURA.")
     parser.add_argument("lrc", type=Path, help="Word-timed LRC (one word per row)")
     parser.add_argument("--draft", type=Path, help="Write a first phrase guess (one phrase per row) to this file")
-    parser.add_argument("--lyrics", type=Path, help="Lyric text (one lyric line per row), for the draft's line breaks")
+    parser.add_argument("--lyrics", type=Path, help="Lyrics (text with one lyric line per row, or .srt), for the draft's line breaks")
     parser.add_argument("--max-words", type=int, default=7, help="Draft: split lines longer than this (default 7)")
     parser.add_argument("--phrases", type=Path, help="Phrase file (one phrase per row) to turn into the LRC")
-    parser.add_argument("-o", "--output", type=Path, help="Output LRC (default: <lrc>.phrased.lrc)")
+    parser.add_argument("-o", "--output", type=Path, help="Output LRC (default: <lrc>.phrase.lrc)")
     args = parser.parse_args()
     sys.stdout.reconfigure(encoding="utf-8")
     sys.stderr.reconfigure(encoding="utf-8")
 
     words = read_words(args.lrc)
     if args.draft:
-        write_draft(words, read_rows(args.lyrics) if args.lyrics else None, args.max_words, args.draft)
+        write_draft(words, read_lyric_lines(args.lyrics) if args.lyrics else None, args.max_words, args.draft)
     if args.phrases:
-        rows, warnings = build_lrc(words, read_rows(args.phrases))
-        output = args.output or args.lrc.with_suffix(".phrased.lrc")
+        rows, warnings = build_lrc(words, read_lyric_lines(args.phrases))
+        output = args.output or args.lrc.with_suffix(".phrase.lrc")
         write_rows(output, rows)
         print(f"Wrote {len(rows)} rows to {output}")
         for w in warnings:

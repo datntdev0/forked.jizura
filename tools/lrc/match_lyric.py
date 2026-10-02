@@ -1,7 +1,7 @@
 """Align a lyric text file to an audio file and write a timed LRC file.
 
 Usage:
-    python match_lyric.py song.mp3 lyric.txt
+    python match_lyric.py song.mp3 lyric.txt      (or the lyrics as an .srt: its text is used, its times are not)
     python match_lyric.py song.mp3 lyric.txt -o song.lrc --model large-v3 --language vi
 
 Output, one word per row ([interlude] marks long gaps without singing):
@@ -18,6 +18,8 @@ import stable_whisper
 import torch
 import whisper
 
+from lyric_text import read_lyric_lines
+
 
 def default_device() -> str:
     # torch.cuda.is_available() can be True for GPUs the installed build has no kernels for (e.g. old Pascal cards).
@@ -33,8 +35,7 @@ def format_time(seconds: float) -> str:
 
 
 def read_lyric(path: Path) -> str:
-    lines = [line.strip() for line in path.read_text(encoding="utf-8").splitlines()]
-    return "\n".join(line for line in lines if line)
+    return "\n".join(read_lyric_lines(path))
 
 
 def align_lyric(audio, lyric: str, model_name: str, device: str, language: str | None, use_demucs: bool):
@@ -76,7 +77,7 @@ def build_lrc(segments, interlude_gap: float, audio_duration: float) -> list[str
 def main():
     parser = argparse.ArgumentParser(description="Create a timed LRC file from lyric text + audio.")
     parser.add_argument("audio", type=Path, help="Audio file (mp3, wav, ...)")
-    parser.add_argument("lyric", type=Path, help="Lyric text file (UTF-8, one line per lyric line)")
+    parser.add_argument("lyric", type=Path, help="Lyric file (UTF-8): text with one lyric line per row, or .srt")
     parser.add_argument("-o", "--output", type=Path, help="Output .lrc file (default: next to the audio file)")
     parser.add_argument("--model", default="medium", help="Whisper model: tiny, base, small, medium, large-v3, ...")
     parser.add_argument("--device", default=default_device(), help="cuda or cpu (default: cuda if supported)")
