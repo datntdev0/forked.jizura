@@ -48,7 +48,8 @@ word, a long sentence is too much text at once. Rules:
 
 - **Never change the words**: same words, spelling, punctuation and order; only move the row breaks.
   The build step refuses anything else.
-- **Size**: about 2-7 words (Latin scripts) and 1-3.5 s of singing. Lines of 5 words or fewer stay whole.
+- **Size**: at most 6 words per row (Latin scripts), usually 2-6, and 1-3.5 s of singing. A lyric line of 6 words
+  or fewer stays whole; a longer one is split into rows of 6 words or fewer.
 - **Break by meaning**: between clauses, after a comma, subject | predicate. Keep together a noun and its modifiers,
   a verb and its object, a preposition and its noun, set expressions and names.
 - **Don't strand function words** at a row end or start (vi: là, của, với, và, mà, thì; en: the, a, of, to, and),
@@ -68,6 +69,8 @@ python tools/lrc/phrase_lrc.py "<folder>/<song>.lrc" --phrases "<folder>/<song>.
 ```
 
 - `Phrase does not match the words at ...`: fix that row of the phrase file (a word lost, changed or moved), build again.
+- `warning: ... (N words: more than 6)`: split that row by the rules above and build again (a row in another
+  script may stay whole).
 - `warning: ... all words within 0.12s`: the aligner had no real timing there. Estimate a start time between the rows
   around it, edit it in `<song>.phrase.lrc`, and tell the user it is a guess to check by ear. Also look at the row
   after it: its first words may be squeezed too (gaps of a few hundredths of a second).

@@ -10,7 +10,7 @@ Two steps, so a person (or an agent) can decide where the phrases break:
 
     python phrase_lrc.py song.lrc --phrases song.phrases.txt -o song.phrase.lrc
         each phrase row starts at the time of its first word; [interlude] rows are kept;
-        stops when the phrases do not match the words, and warns about phrases the aligner squeezed together
+        stops when the phrases do not match the words, warns about rows over --max-words and phrases the aligner squeezed
 """
 
 import argparse
@@ -97,7 +97,7 @@ def write_draft(words, lyrics, max_words: int, output: Path):
 
 # ---------- phrases -> LRC ----------
 
-def build_lrc(words, phrases: list[str]) -> tuple[list[str], list[str]]:
+def build_lrc(words, phrases: list[str], max_words: int) -> tuple[list[str], list[str]]:
     rows, warnings, i = [], [], 0
     for phrase in phrases:
         while i < len(words) and is_interlude(words[i][1]):
@@ -110,6 +110,8 @@ def build_lrc(words, phrases: list[str]) -> tuple[list[str], list[str]]:
         start, last = words[i][0], words[i + len(tokens) - 1][0]
         if len(tokens) > 1 and (last - start) / (len(tokens) - 1) < SQUEEZED:
             warnings.append(f"{format_time(start)}{phrase}  (all words within {last - start:.2f}s: check the start time)")
+        if len(tokens) > max_words:
+            warnings.append(f"{format_time(start)}{phrase}  ({len(tokens)} words: more than {max_words})")
         rows.append(format_time(start) + phrase)
         i += len(tokens)
     rest = words[i:]
@@ -125,7 +127,8 @@ def main():
     parser.add_argument("lrc", type=Path, help="Word-timed LRC (one word per row)")
     parser.add_argument("--draft", type=Path, help="Write a first phrase guess (one phrase per row) to this file")
     parser.add_argument("--lyrics", type=Path, help="Lyrics (text with one lyric line per row, or .srt), for the draft's line breaks")
-    parser.add_argument("--max-words", type=int, default=7, help="Draft: split lines longer than this (default 7)")
+    parser.add_argument("--max-words", type=int, default=6,
+                        help="Most words in a row: the draft splits / lists longer lines, the build warns (default 6)")
     parser.add_argument("--phrases", type=Path, help="Phrase file (one phrase per row) to turn into the LRC")
     parser.add_argument("-o", "--output", type=Path, help="Output LRC (default: <lrc>.phrase.lrc)")
     args = parser.parse_args()
@@ -136,7 +139,7 @@ def main():
     if args.draft:
         write_draft(words, read_lyric_lines(args.lyrics) if args.lyrics else None, args.max_words, args.draft)
     if args.phrases:
-        rows, warnings = build_lrc(words, read_lyric_lines(args.phrases))
+        rows, warnings = build_lrc(words, read_lyric_lines(args.phrases), args.max_words)
         output = args.output or args.lrc.with_suffix(".phrase.lrc")
         write_rows(output, rows)
         print(f"Wrote {len(rows)} rows to {output}")
