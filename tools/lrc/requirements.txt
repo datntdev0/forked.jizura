@@ -1,0 +1,4 @@
+openai-whisper
+stable-ts
+torch
+torchaudio
