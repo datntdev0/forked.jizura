@@ -10,7 +10,8 @@ Two steps, so a person (or an agent) can decide where the phrases break:
 
     python phrase_lrc.py song.lrc --phrases song.phrases.txt -o song.phrase.lrc
         each phrase row starts at the time of its first word; [interlude] rows are kept;
-        stops when the phrases do not match the words, warns about rows over --max-words and phrases the aligner squeezed
+        stops when the phrases do not match the words; warns about rows over --max-words, rows on screen (until the
+        next row starts) under --min-secs, rows sung for --max-secs or more, and phrases the aligner squeezed
 """
 
 import argparse
@@ -24,6 +25,7 @@ from lyric_text import read_lyric_lines
 TIME_ROW = re.compile(r"^\[(\d+):(\d+(?:\.\d+)?)\](.*)$")
 INTERLUDE = re.compile(r"^\[[^\]]*\]$")  # [interlude], [間奏 8], ... — no lyric text
 SQUEEZED = 0.1  # seconds per word: below this the aligner had no real timing for the phrase
+LAST_WORD = 0.5  # seconds given to a row's last word: the LRC has word starts only
 
 
 def nfc(text: str) -> str:
@@ -97,11 +99,11 @@ def write_draft(words, lyrics, max_words: int, output: Path):
 
 # ---------- phrases -> LRC ----------
 
-def build_lrc(words, phrases: list[str], max_words: int) -> tuple[list[str], list[str]]:
-    rows, warnings, i = [], [], 0
+def build_lrc(words, phrases: list[str], limits) -> tuple[list[str], list[str]]:
+    rows, warnings, i = [], [], 0  # rows: (start, start of the last word or None for an interlude, text)
     for phrase in phrases:
         while i < len(words) and is_interlude(words[i][1]):
-            rows.append(format_time(words[i][0]) + words[i][1]); i += 1
+            rows.append((words[i][0], None, words[i][1])); i += 1
         tokens = phrase.split()
         got = [w for _, w in words[i:i + len(tokens)]]
         if got != tokens:
@@ -110,16 +112,32 @@ def build_lrc(words, phrases: list[str], max_words: int) -> tuple[list[str], lis
         start, last = words[i][0], words[i + len(tokens) - 1][0]
         if len(tokens) > 1 and (last - start) / (len(tokens) - 1) < SQUEEZED:
             warnings.append(f"{format_time(start)}{phrase}  (all words within {last - start:.2f}s: check the start time)")
-        if len(tokens) > max_words:
-            warnings.append(f"{format_time(start)}{phrase}  ({len(tokens)} words: more than {max_words})")
-        rows.append(format_time(start) + phrase)
+        if len(tokens) > limits.max_words:
+            warnings.append(f"{format_time(start)}{phrase}  ({len(tokens)} words: more than {limits.max_words})")
+        rows.append((start, last, phrase))
         i += len(tokens)
     rest = words[i:]
     if any(not is_interlude(w) for _, w in rest):
         sys.exit(f"Words left after the last phrase, from {format_time(rest[0][0])}: "
                  + " ".join([w for _, w in rest if not is_interlude(w)][:12]) + " ...")
-    rows += [format_time(t) + w for t, w in rest]
-    return rows, warnings
+    rows += [(t, None, w) for t, w in rest]
+    return [format_time(t) + text for t, _, text in rows], warnings + timing_warnings(rows, limits)
+
+
+def timing_warnings(rows, limits) -> list[str]:
+    """Too short: the row is on screen (until the next row starts) under min_secs - too quick to read.
+    Too long: singing the row takes max_secs or more. A pause after the row does not count: JIZURA keeps the row
+    on screen until the next one anyway, and no grouping can change that."""
+    warnings = []
+    for (start, last, text), (next_start, _, _) in zip(rows, rows[1:]):
+        if last is None:
+            continue
+        shown, sung = next_start - start, min(next_start, last + LAST_WORD) - start
+        if shown < limits.min_secs:
+            warnings.append(f"{format_time(start)}{text}  ({shown:.2f}s on screen: under {limits.min_secs}s)")
+        if sung >= limits.max_secs:
+            warnings.append(f"{format_time(start)}{text}  (sung for about {sung:.2f}s: {limits.max_secs}s or more)")
+    return warnings
 
 
 def main():
@@ -129,6 +147,8 @@ def main():
     parser.add_argument("--lyrics", type=Path, help="Lyrics (text with one lyric line per row, or .srt), for the draft's line breaks")
     parser.add_argument("--max-words", type=int, default=6,
                         help="Most words in a row: the draft splits / lists longer lines, the build warns (default 6)")
+    parser.add_argument("--min-secs", type=float, default=1.0, help="Build: warn when a row shows shorter (default 1.0)")
+    parser.add_argument("--max-secs", type=float, default=2.5, help="Build: warn when singing a row takes this long or longer (default 2.5)")
     parser.add_argument("--phrases", type=Path, help="Phrase file (one phrase per row) to turn into the LRC")
     parser.add_argument("-o", "--output", type=Path, help="Output LRC (default: <lrc>.phrase.lrc)")
     args = parser.parse_args()
@@ -139,7 +159,7 @@ def main():
     if args.draft:
         write_draft(words, read_lyric_lines(args.lyrics) if args.lyrics else None, args.max_words, args.draft)
     if args.phrases:
-        rows, warnings = build_lrc(words, read_lyric_lines(args.phrases), args.max_words)
+        rows, warnings = build_lrc(words, read_lyric_lines(args.phrases), args)
         output = args.output or args.lrc.with_suffix(".phrase.lrc")
         write_rows(output, rows)
         print(f"Wrote {len(rows)} rows to {output}")

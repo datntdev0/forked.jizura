@@ -18,8 +18,9 @@ The lyrics can be plain text (one lyric line per row) or an `.srt` (only its tex
    python phrase_lrc.py song.lrc --phrases song.phrases.txt -o song.phrase.lrc
    ```
 
-   Each phrase row starts at its first word; `[interlude]` rows are kept. A warning lists phrases whose words the
-   aligner squeezed together (no real timing): check their start time by ear.
+   Each phrase row starts at its first word; `[interlude]` rows are kept. Warnings list rows on screen under 1 s,
+   rows sung for 2.5 s or more, rows over 6 words (`--min-secs`, `--max-secs`, `--max-words`), and phrases whose
+   words the aligner squeezed together (no real timing: check their start time by ear).
 
 The Codex skill `preprocess` (`.agents/skills/preprocess/`) runs both steps for a folder with an mp3 and an srt,
 with the agent choosing the phrase breaks.

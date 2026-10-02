@@ -48,16 +48,20 @@ word, a long sentence is too much text at once. Rules:
 
 - **Never change the words**: same words, spelling, punctuation and order; only move the row breaks.
   The build step refuses anything else.
-- **Size**: at most 6 words per row (Latin scripts), usually 2-6, and 1-3.5 s of singing. A lyric line of 6 words
-  or fewer stays whole; a longer one is split into rows of 6 words or fewer.
+- **Time (hard limits)**: every row is **on screen at least 1 s** (from its start to the next row's start), and
+  **singing it takes under 2.5 s** (from its first word to the end of its last word). A pause after a row does not
+  count: JIZURA keeps the row on screen until the next one, and no grouping changes that.
+- **Words (target)**: at most 6 words per row (Latin scripts), usually 2-6. A lyric line of 6 words or fewer stays
+  whole; a longer one is split into rows of 6 words or fewer. When no split of a line keeps every part at 1 s or more
+  (fast singing), the time limit wins: keep 7-8 words in one row rather than make a row under 1 s.
 - **Break by meaning**: between clauses, after a comma, subject | predicate. Keep together a noun and its modifiers,
   a verb and its object, a preposition and its noun, set expressions and names.
 - **Don't strand function words** at a row end or start (vi: là, của, với, và, mà, thì; en: the, a, of, to, and),
   unless the singer clearly pauses there.
 - **Follow the singing**: a large jump between word times is a breath, a good place to break. Times are word
   starts; a long gap can also be a held word, so do not break on gaps alone.
-- **Repeated lines (chorus) break the same way every time.**
-- **No tiny rows**: a 1-2 word row under ~0.8 s joins its neighbour, unless it is a hook or a shout.
+- **Repeated lines (chorus) break the same way every time**, unless the time limits need another break in one
+  repetition (the singing can be faster there).
 - Rows in another script (e.g. a Khmer or Japanese line) stay whole.
 - JIZURA markup: `/` (manual chunk split), `*word*` (emphasis), a trailing `!` (impact), `|` (note). Lyrics that
   already contain these keep them; do not add any unless the user asks.
@@ -69,8 +73,14 @@ python tools/lrc/phrase_lrc.py "<folder>/<song>.lrc" --phrases "<folder>/<song>.
 ```
 
 - `Phrase does not match the words at ...`: fix that row of the phrase file (a word lost, changed or moved), build again.
-- `warning: ... (N words: more than 6)`: split that row by the rules above and build again (a row in another
-  script may stay whole).
+- `warning: ... (0.84s on screen: under 1.0s)`: join the row with a neighbour (or move the break by a word) and build
+  again. Must be fixed.
+- `warning: ... (sung for about 2.56s: 2.5s or more)`: split the row (or move a word to a neighbour). Must be fixed.
+  The script counts 0.5 s for the last word, whose real end the LRC does not have.
+- `warning: ... (N words: more than 6)`: split the row when the parts keep the time limits; otherwise it may stay
+  (also a row in another script). List the rows you kept long in the report.
+- Repeat until no time warning is left. When a line cannot meet both time limits at all, pick the closest break and
+  tell the user.
 - `warning: ... all words within 0.12s`: the aligner had no real timing there. Estimate a start time between the rows
   around it, edit it in `<song>.phrase.lrc`, and tell the user it is a guess to check by ear. Also look at the row
   after it: its first words may be squeezed too (gaps of a few hundredths of a second).
