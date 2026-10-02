@@ -151,7 +151,10 @@ J.isHira = c => /[ぁ-ゟ]/.test(c);
 J.isKata = c => /[゠-ヿㇰ-ㇿｦ-ﾟ]/.test(c);
 J.isSmallKana = c => 'ぁぃぅぇぉっゃゅょゎァィゥェォッャュョヮヵヶ'.includes(c);
 J.isPunct = c => /[、。，．,.!?！？…‥・「」『』（）()【】〈〉《》〔〕［］\[\]'"“”‘’ー〜～:：;；\-—―]/.test(c);
-J.isLatin = c => /[A-Za-z0-9]/.test(c);
+/* Latin letters incl. accented ones (é, ñ, Vietnamese ă ơ ư ộ …; not × ÷) and digits — as a class for building regexes */
+J.LATIN_CLASS = 'A-Za-z0-9\u00c0-\u00d6\u00d8-\u00f6\u00f8-\u024f\u1e00-\u1eff';
+J.LATIN_RE = new RegExp('[' + J.LATIN_CLASS + ']');
+J.isLatin = c => J.LATIN_RE.test(c);
 J.VERT_ROTATE = 'ー〜～…‥―—-()（）「」『』【】〈〉《》〔〕[]［］→←:：;；=＝';
 
 /* ---- kana → romaji (for annotation labels; kanji left out) ---- */

@@ -33,8 +33,8 @@ function jzUI(thisObj) {
     var cHor = gSw.add('checkbox', undefined, 'ホラーの演出も使う'); cHor.value = jzGet('horror', '0') === '1';
     cHor.helpTip = '不気味な雰囲気の部品（約50）と配色セット3。オンにすると、おまかせの雰囲気に「ホラー」が加わります（ホラーの部品は雰囲気が「ホラー」のときだけ使います）';
     var gLang = gSw.add('group'); gLang.spacing = 4; gLang.add('statictext', undefined, '歌詞の言語');
-    var JZ_LANG_KEYS = ['auto', 'ja', 'zh-Hant', 'zh-Hans', 'ko', 'en'];
-    var ddLang = gLang.add('dropdownlist', undefined, ['自動判定', '日本語', '繁體中文', '简体中文', '한국어', 'English']); ddLang.selection = parseInt(jzGet('lang', '0'), 10) || 0;
+    var JZ_LANG_KEYS = ['auto', 'ja', 'zh-Hant', 'zh-Hans', 'ko', 'en', 'vi'];
+    var ddLang = gLang.add('dropdownlist', undefined, ['自動判定', '日本語', '繁體中文', '简体中文', '한국어', 'English', 'Tiếng Việt']); ddLang.selection = parseInt(jzGet('lang', '0'), 10) || 0;
     ddLang.helpTip = '中国語（繁体字・簡体字）や韓国語の歌詞は、その文字を持つ書体で組みます（各スタイルの書体の雰囲気に近いものに置き換え）。自動判定はかな・ハングル・繁体字／簡体字に特有の字から判断します';
     function switches() { return { extra: cExtra.value, wa: cWa.value, typo: cTypo.value, kinetic: cKin.value, horror: cHor.value, lang: JZ_LANG_KEYS[ddLang.selection ? ddLang.selection.index : 0] }; }
     var gS = t1.add('group'); gS.add('statictext', undefined, 'スタイル');

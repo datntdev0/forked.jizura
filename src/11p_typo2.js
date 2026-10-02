@@ -38,8 +38,8 @@ function keyOf(lay) {
   // latin: first letter of the longest word
   let wb = -1, wl = 0;
   for (let i = 0; i < lay.length; i++) {
-    if (!/[A-Za-z0-9]/.test(lay[i].ch)) continue;
-    let j = i; while (j < lay.length && /[A-Za-z0-9'’]/.test(lay[j].ch)) j++;
+    if (!J.isLatin(lay[i].ch)) continue;
+    let j = i; while (j < lay.length && (J.isLatin(lay[j].ch) || /['’]/.test(lay[j].ch))) j++;
     if (j - i > wl) { wl = j - i; wb = i; }
     i = j;
   }

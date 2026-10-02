@@ -1584,6 +1584,7 @@ function syncUI() {
   for (const set of J.SET_ORDER) document.querySelectorAll('.' + set + '-toggle').forEach(el => { el.checked = J.setOn(S.project, set); });
   document.querySelectorAll('.unify-toggle').forEach(el => { el.checked = S.project.unify === true; });
   document.querySelectorAll('.typeset-toggle').forEach(el => { el.checked = S.project.typeset === true; });
+  document.querySelectorAll('.recap-toggle').forEach(el => { el.checked = S.project.recap !== false; });
   $('lyricLang').value = J.LANG_LABEL[S.project.lang] ? S.project.lang : 'auto'; langNote();
   document.querySelectorAll('.themeSel').forEach(el => { el.value = J.THEMES[S.project.themeId] ? S.project.themeId : ''; });
   renderFontRoles(); renderColors(); renderFx(); renderTech(); syncOut(); drawStyleGrid();
@@ -1686,6 +1687,7 @@ function bind() {
   setSwitch('horror-toggle', 'horror', true, 'ホラーの演出：使う（おまかせの雰囲気に「ホラー」が加わります）', 'ホラーの演出：使わない');
   setSwitch('unify-toggle', 'unify', true, '統一感：オン（パートごとにそろえ、キメ・モーフ・太さも使います）', '統一感：オフ');
   setSwitch('typeset-toggle', 'typeset', true, '文字整列：オン（字間・助詞・英字・0.2秒先・効果控えめ）', '文字整列：オフ');
+  setSwitch('recap-toggle', 'recap', true, '行のまとめカット：使う（時間に余裕のある行は、最後に行全体をもう一度見せます）', '行のまとめカット：使わない（行全体のカットを足しません）');
   $('fxKoma').addEventListener('change', e => { const k = +e.target.value; S.project.fx.koma = k; S.project.fx.onTwos = k > 0; S.project.mood = null; replan(); });
   $('fxHud').addEventListener('change', e => { S.project.fx.hud = e.target.value; replan(); });
   $('fxHideNo').addEventListener('change', e => { remember(); S.project.fx.hideNo = e.target.checked; replan(); commit(); });

@@ -278,7 +278,7 @@ function jzRoleOf(key) {
 // resolve: explicit user role font > key candidates that exist > role default
 // JZ_FONT_MISSING collects the keys whose own typeface (the browser's Google Font) is not installed, for the build report
 var JZ_FONT_MISSING = {}, JZ_FONT_NOAPI = false;
-// ---- lyric language (plan.lang from the browser): Chinese / Korean lyrics are drawn with faces that have their glyphs.
+// ---- lyric language (plan.lang from the browser): Chinese / Korean / Vietnamese lyrics are drawn with faces that have their glyphs.
 // Per language: key \u2192 PostScript candidates (the browser's Google Font first, then OS fonts that always cover the script).
 var JZ_LANG = 'ja';
 var JZ_LANG_SYS = {
@@ -287,7 +287,9 @@ var JZ_LANG_SYS = {
     'zh-Hans': { sansB: ['PingFangSC-Semibold', 'MicrosoftYaHei-Bold', 'NotoSansCJKsc-Bold', 'SourceHanSansSC-Bold'], sans: ['PingFangSC-Regular', 'MicrosoftYaHei', 'NotoSansCJKsc-Regular', 'SourceHanSansSC-Regular'],
                  serifB: ['STSongti-SC-Bold', 'NotoSerifCJKsc-Bold', 'SourceHanSerifSC-Bold', 'SimSun'], serif: ['STSongti-SC-Regular', 'NotoSerifCJKsc-Regular', 'SourceHanSerifSC-Regular', 'SimSun'] },
     ko: { sansB: ['AppleSDGothicNeo-Bold', 'MalgunGothicBold', 'NotoSansCJKkr-Bold', 'SourceHanSansKR-Bold'], sans: ['AppleSDGothicNeo-Regular', 'MalgunGothic', 'NotoSansCJKkr-Regular', 'SourceHanSansKR-Regular'],
-          serifB: ['AppleMyungjo', 'NotoSerifCJKkr-Bold', 'SourceHanSerifKR-Bold', 'Batang'], serif: ['AppleMyungjo', 'NotoSerifCJKkr-Regular', 'SourceHanSerifKR-Regular', 'Batang'] }
+          serifB: ['AppleMyungjo', 'NotoSerifCJKkr-Bold', 'SourceHanSerifKR-Bold', 'Batang'], serif: ['AppleMyungjo', 'NotoSerifCJKkr-Regular', 'SourceHanSerifKR-Regular', 'Batang'] },
+    vi: { sansB: ['BeVietnamPro-Bold', 'SegoeUI-Bold', 'Arial-BoldMT'], sans: ['BeVietnamPro-Medium', 'SegoeUI', 'ArialMT'],
+          serifB: ['Lora-Bold', 'TimesNewRomanPS-BoldMT'], serif: ['Lora-Medium', 'TimesNewRomanPSMT'] }
 };
 // [family (for messages), own PostScript names\u2026, system group]
 var JZ_LANG_FONTS = {
@@ -329,6 +331,15 @@ var JZ_LANG_FONTS = {
         pop: ['Do Hyeon', 'DoHyeon-Regular', 'sansB'], kiwi: ['Gowun Dodum', 'GowunDodum-Regular', 'sans'],
         klee: ['Gowun Batang', 'GowunBatang-Bold', 'serifB'], brush: ['Nanum Brush Script', 'NanumBrush', 'NanumBrushScript-Regular', 'serifB'],
         reggae: ['Black Han Sans', 'BlackHanSans-Regular', 'sansB'], rampart: ['Black Han Sans', 'BlackHanSans-Regular', 'sansB'], potta: ['Nanum Brush Script', 'NanumBrush', 'NanumBrushScript-Regular', 'sansB']
+    },
+    // Vietnamese: only the keys whose Japanese face lacks the Vietnamese letters (same faces as the browser, src/02b_lang.js)
+    vi: {
+        zenkaku: ['Be Vietnam Pro', 'BeVietnamPro-Black', 'sansB'], sansui: ['Be Vietnam Pro', 'BeVietnamPro-Medium', 'sans'],
+        mincho_black: ['Playfair Display', 'PlayfairDisplay-Black', 'serifB'], tokumin: ['Playfair Display', 'PlayfairDisplay-ExtraBold', 'serifB'],
+        shippori: ['Lora', 'Lora-Bold', 'serifB'],
+        pop: ['Paytone One', 'PaytoneOne-Regular', 'sansB'], kiwi: ['Baloo 2', 'Baloo2-SemiBold', 'sans'], dot: ['VT323', 'VT323-Regular', 'sans'],
+        klee: ['Patrick Hand', 'PatrickHand-Regular', 'sans'], brush: ['Dancing Script', 'DancingScript-Bold', 'serifB'],
+        reggae: ['Bungee', 'Bungee-Regular', 'sansB'], rampart: ['Bungee Shade', 'BungeeShade-Regular', 'sansB']
     }
 };
 // random characters in the lyric's own writing system (same sets as the browser's J.pool \u2014 issue #16)
@@ -337,7 +348,8 @@ var JZ_POOLS = {
     'zh-Hant': { kana: '\u7684\u4E00\u662F\u4E0D\u4E86\u4EBA\u6211\u5728\u6709\u4ED6\u9019\u4E2D\u5927\u4F86\u4E0A\u570B\u500B\u5230\u8AAA\u5011\u70BA\u5B50\u548C\u4F60\u5730\u51FA\u9053\u4E5F\u6642\u5E74\u5F97\u5C31\u90A3\u8981\u4E0B\u4EE5\u751F\u6703\u81EA\u8457\u53BB\u4E4B\u904E\u5BB6\u5B78\u5C0D\u53EF\u5979\u88E1\u5F8C\u5C0F\u9EBC\u5FC3\u591A\u5929\u800C\u80FD\u597D\u90FD\u7136\u6C92\u65E5\u65BC\u8D77\u9084\u767C\u6210\u4E8B\u53EA\u4F5C\u7576\u60F3\u770B\u6587\u7121\u958B\u624B\u5341\u7528\u4E3B\u884C\u65B9\u53C8\u5982\u524D\u6240\u672C\u898B\u7D93\u982D\u9762\u516C\u540C\u4E09\u5DF2\u8001\u5F9E\u52D5\u5169\u9577\u77E5\u6C11\u6A23\u73FE\u5206\u5C07\u5916\u4F46\u8EAB\u4E9B\u8207\u9AD8\u610F\u9032\u628A\u6CD5\u6B64\u5BE6\u56DE\u4E8C\u7406\u7F8E\u9EDE\u6708\u660E\u5176\u7A2E\u8072\u5168\u5DE5\u5DF1\u8A71\u5152\u8005\u5411\u60C5\u90E8\u6B63\u540D\u5B9A\u5973\u554F\u529B\u6A5F\u7D66\u7B49\u5E7E\u5F88\u6700\u9593\u65B0\u4EC0\u6253\u4FBF\u4F4D\u56E0\u91CD\u88AB\u8D70\u96FB\u56DB\u7B2C\u9580\u76F8\u6B21\u6771\u6D77\u53E3\u4F7F\u897F\u518D\u5E73\u771F\u807D\u4E16\u6C23\u4FE1\u5317\u5C11\u95DC\u611B\u5922\u5149\u5F71\u7A7A\u591C\u661F\u96E8\u6DDA\u6200\u82B1\u98A8', hira: '\u7684\u4E00\u662F\u4E0D\u4E86\u4EBA\u6211\u5728\u6709\u4ED6\u9019\u4E2D\u5927\u4F86\u4E0A\u570B\u500B\u5230\u8AAA\u5011\u70BA\u5B50\u548C\u4F60\u5730\u51FA\u9053\u4E5F\u6642\u5E74\u5F97\u5C31\u90A3\u8981\u4E0B\u4EE5\u751F\u6703\u81EA\u8457\u53BB\u4E4B\u904E\u5BB6\u5B78\u5C0D\u53EF\u5979\u88E1\u5F8C\u5C0F\u9EBC\u5FC3\u591A\u5929\u800C\u80FD\u597D\u90FD\u7136\u6C92\u65E5\u65BC\u8D77\u9084\u767C\u6210\u4E8B\u53EA\u4F5C\u7576\u60F3\u770B\u6587\u7121\u958B\u624B\u5341\u7528\u4E3B\u884C\u65B9\u53C8\u5982\u524D\u6240\u672C\u898B\u7D93\u982D\u9762\u516C\u540C\u4E09\u5DF2\u8001\u5F9E\u52D5\u5169\u9577\u77E5\u6C11\u6A23\u73FE\u5206\u5C07\u5916\u4F46\u8EAB\u4E9B\u8207\u9AD8\u610F\u9032\u628A\u6CD5\u6B64\u5BE6\u56DE\u4E8C\u7406\u7F8E\u9EDE\u6708\u660E\u5176\u7A2E\u8072\u5168\u5DE5\u5DF1\u8A71\u5152\u8005\u5411\u60C5\u90E8\u6B63\u540D\u5B9A\u5973\u554F\u529B\u6A5F\u7D66\u7B49\u5E7E\u5F88\u6700\u9593\u65B0\u4EC0\u6253\u4FBF\u4F4D\u56E0\u91CD\u88AB\u8D70\u96FB\u56DB\u7B2C\u9580\u76F8\u6B21\u6771\u6D77\u53E3\u4F7F\u897F\u518D\u5E73\u771F\u807D\u4E16\u6C23\u4FE1\u5317\u5C11\u95DC\u611B\u5922\u5149\u5F71\u7A7A\u591C\u661F\u96E8\u6DDA\u6200\u82B1\u98A8' },
     'zh-Hans': { kana: '\u7684\u4E00\u662F\u4E0D\u4E86\u4EBA\u6211\u5728\u6709\u4ED6\u8FD9\u4E2D\u5927\u6765\u4E0A\u56FD\u4E2A\u5230\u8BF4\u4EEC\u4E3A\u5B50\u548C\u4F60\u5730\u51FA\u9053\u4E5F\u65F6\u5E74\u5F97\u5C31\u90A3\u8981\u4E0B\u4EE5\u751F\u4F1A\u81EA\u7740\u53BB\u4E4B\u8FC7\u5BB6\u5B66\u5BF9\u53EF\u5979\u91CC\u540E\u5C0F\u4E48\u5FC3\u591A\u5929\u800C\u80FD\u597D\u90FD\u7136\u6CA1\u65E5\u4E8E\u8D77\u8FD8\u53D1\u6210\u4E8B\u53EA\u4F5C\u5F53\u60F3\u770B\u6587\u65E0\u5F00\u624B\u5341\u7528\u4E3B\u884C\u65B9\u53C8\u5982\u524D\u6240\u672C\u89C1\u7ECF\u5934\u9762\u516C\u540C\u4E09\u5DF2\u8001\u4ECE\u52A8\u4E24\u957F\u77E5\u6C11\u6837\u73B0\u5206\u5C06\u5916\u4F46\u8EAB\u4E9B\u4E0E\u9AD8\u610F\u8FDB\u628A\u6CD5\u6B64\u5B9E\u56DE\u4E8C\u7406\u7F8E\u70B9\u6708\u660E\u5176\u79CD\u58F0\u5168\u5DE5\u5DF1\u8BDD\u513F\u8005\u5411\u60C5\u90E8\u6B63\u540D\u5B9A\u5973\u95EE\u529B\u673A\u7ED9\u7B49\u51E0\u5F88\u6700\u95F4\u65B0\u4EC0\u6253\u4FBF\u4F4D\u56E0\u91CD\u88AB\u8D70\u7535\u56DB\u7B2C\u95E8\u76F8\u6B21\u4E1C\u6D77\u53E3\u4F7F\u897F\u518D\u5E73\u771F\u542C\u4E16\u6C14\u4FE1\u5317\u5C11\u5173\u7231\u68A6\u5149\u5F71\u7A7A\u591C\u661F\u96E8\u6CEA\u604B\u82B1\u98CE', hira: '\u7684\u4E00\u662F\u4E0D\u4E86\u4EBA\u6211\u5728\u6709\u4ED6\u8FD9\u4E2D\u5927\u6765\u4E0A\u56FD\u4E2A\u5230\u8BF4\u4EEC\u4E3A\u5B50\u548C\u4F60\u5730\u51FA\u9053\u4E5F\u65F6\u5E74\u5F97\u5C31\u90A3\u8981\u4E0B\u4EE5\u751F\u4F1A\u81EA\u7740\u53BB\u4E4B\u8FC7\u5BB6\u5B66\u5BF9\u53EF\u5979\u91CC\u540E\u5C0F\u4E48\u5FC3\u591A\u5929\u800C\u80FD\u597D\u90FD\u7136\u6CA1\u65E5\u4E8E\u8D77\u8FD8\u53D1\u6210\u4E8B\u53EA\u4F5C\u5F53\u60F3\u770B\u6587\u65E0\u5F00\u624B\u5341\u7528\u4E3B\u884C\u65B9\u53C8\u5982\u524D\u6240\u672C\u89C1\u7ECF\u5934\u9762\u516C\u540C\u4E09\u5DF2\u8001\u4ECE\u52A8\u4E24\u957F\u77E5\u6C11\u6837\u73B0\u5206\u5C06\u5916\u4F46\u8EAB\u4E9B\u4E0E\u9AD8\u610F\u8FDB\u628A\u6CD5\u6B64\u5B9E\u56DE\u4E8C\u7406\u7F8E\u70B9\u6708\u660E\u5176\u79CD\u58F0\u5168\u5DE5\u5DF1\u8BDD\u513F\u8005\u5411\u60C5\u90E8\u6B63\u540D\u5B9A\u5973\u95EE\u529B\u673A\u7ED9\u7B49\u51E0\u5F88\u6700\u95F4\u65B0\u4EC0\u6253\u4FBF\u4F4D\u56E0\u91CD\u88AB\u8D70\u7535\u56DB\u7B2C\u95E8\u76F8\u6B21\u4E1C\u6D77\u53E3\u4F7F\u897F\u518D\u5E73\u771F\u542C\u4E16\u6C14\u4FE1\u5317\u5C11\u5173\u7231\u68A6\u5149\u5F71\u7A7A\u591C\u661F\u96E8\u6CEA\u604B\u82B1\u98CE' },
     ko: { kana: '\uAC00\uB098\uB2E4\uB77C\uB9C8\uBC14\uC0AC\uC544\uC790\uCC28\uCE74\uD0C0\uD30C\uD558\uAC70\uB108\uB354\uB7EC\uBA38\uBC84\uC11C\uC5B4\uC800\uCC98\uCEE4\uD130\uD37C\uD5C8\uACE0\uB178\uB3C4\uB85C\uBAA8\uBCF4\uC18C\uC624\uC870\uCD08\uCF54\uD1A0\uD3EC\uD638\uAD6C\uB204\uB450\uB8E8\uBB34\uBD80\uC218\uC6B0\uC8FC\uCD94\uCFE0\uD22C\uD478\uD6C4\uADF8\uB290\uB4DC\uB974\uBBC0\uBE0C\uC2A4\uC73C\uC988\uCE20\uD06C\uD2B8\uD504\uD750\uAE30\uB2C8\uB514\uB9AC\uBBF8\uBE44\uC2DC\uC774\uC9C0\uCE58\uD0A4\uD2F0\uD53C\uD788\uC0AC\uB791\uBCC4\uBE5B\uB9C8\uC74C\uB178\uB798\uD558\uB298\uBC14\uB78C\uAFC8\uB208\uBB3C\uB108\uB098\uC6B0\uB9AC', hira: '\uAC00\uB098\uB2E4\uB77C\uB9C8\uBC14\uC0AC\uC544\uC790\uCC28\uCE74\uD0C0\uD30C\uD558\uAC70\uB108\uB354\uB7EC\uBA38\uBC84\uC11C\uC5B4\uC800\uCC98\uCEE4\uD130\uD37C\uD5C8\uACE0\uB178\uB3C4\uB85C\uBAA8\uBCF4\uC18C\uC624\uC870\uCD08\uCF54\uD1A0\uD3EC\uD638\uAD6C\uB204\uB450\uB8E8\uBB34\uBD80\uC218\uC6B0\uC8FC\uCD94\uCFE0\uD22C\uD478\uD6C4\uADF8\uB290\uB4DC\uB974\uBBC0\uBE0C\uC2A4\uC73C\uC988\uCE20\uD06C\uD2B8\uD504\uD750\uAE30\uB2C8\uB514\uB9AC\uBBF8\uBE44\uC2DC\uC774\uC9C0\uCE58\uD0A4\uD2F0\uD53C\uD788\uC0AC\uB791\uBCC4\uBE5B\uB9C8\uC74C\uB178\uB798\uD558\uB298\uBC14\uB78C\uAFC8\uB208\uBB3C\uB108\uB098\uC6B0\uB9AC' },
-    en: { kana: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', hira: 'abcdefghijklmnopqrstuvwxyz' }
+    en: { kana: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', hira: 'abcdefghijklmnopqrstuvwxyz' },
+    vi: { kana: 'A\u0102\u00C2BCD\u0110E\u00CAGHIKLMNO\u00D4\u01A0PQRSTU\u01AFVXY', hira: 'a\u0103\u00E2bcd\u0111e\u00EAghiklmno\u00F4\u01A1pqrstu\u01B0vxy\u00E1\u00E0\u1EA3\u00E3\u1EA1\u1EA5\u1EA7\u1EA9\u1EAB\u1EAD\u1EAF\u1EB1\u1EB3\u1EB5\u1EB7\u00E9\u00E8\u1EBB\u1EBD\u1EB9\u1EBF\u1EC1\u1EC3\u1EC5\u1EC7\u00ED\u00EC\u1EC9\u0129\u1ECB\u00F3\u00F2\u1ECF\u00F5\u1ECD\u1ED1\u1ED3\u1ED5\u1ED7\u1ED9\u1EDB\u1EDD\u1EDF\u1EE1\u1EE3\u00FA\u00F9\u1EE7\u0169\u1EE5\u1EE9\u1EEB\u1EED\u1EEF\u1EF1\u00FD\u1EF3\u1EF7\u1EF9\u1EF5' }
 };
 function jzPool(kind) { var P = JZ_POOLS[JZ_POOL_LANG] || JZ_POOLS.ja; return P[kind] || JZ_POOLS.ja[kind]; }
 var JZ_POOL_LANG = 'ja';
@@ -786,7 +798,7 @@ function jzZoneOf(zones, li) { var z = zones[Math.max(0, li || 0) % 2]; return {
 function jzSplitHalf(t, lang) {
     t = jzTrim(String(t || ''));
     var n = jzChars(t.replace(/\s+/g, '')).length, k;
-    var words = lang === 'en' ? jzPhraseChunks(jzChunk(t)) : jzChunk(t);
+    var words = jzIsLatinLang(lang) ? jzPhraseChunks(jzChunk(t)) : jzChunk(t);
     if (words.length >= 2) {
         var total = 0, acc = 0, best = 1, bd = 1e9, sep = /[A-Za-z]/.test(t) ? ' ' : '';
         for (k = 0; k < words.length; k++) total += jzChars(String(words[k]).replace(/\s+/g, '')).length;
@@ -855,20 +867,24 @@ function jzPickFx(rng, st, en, fx, emph, fxHist, kind) {
 }
 function jzPlanOf(g, k, rng, st, extra) { var D = JZ_REG[g][k]; if (!D || !D.plan) return {}; try { return (g === 'layout' ? D.plan(rng, extra || {}, st) : D.plan(rng, st)) || {}; } catch (e) { jzWarn(g + ' ' + k + ' plan: ' + e.toString()); return {}; } }
 
-// ---- lyric language (same rule as the browser, src/02b_lang.js): Latin only \u2192 en, kana \u2192 ja, hangul \u2192 ko, Han only \u2192 Traditional / Simplified
+// ---- lyric language (same rule as the browser, src/02b_lang.js): Latin only \u2192 vi with Vietnamese letters, else en, kana \u2192 ja, hangul \u2192 ko, Han only \u2192 Traditional / Simplified
+function jzIsLatinLang(l) { return l === 'en' || l === 'vi'; }
 var JZ_TC = '\u5011\u500B\u8AAA\u9019\u6703\u5C0D\u6642\u4F86\u9084\u5F8C\u904E\u570B\u958B\u95DC\u8207\u70BA\u5F9E\u554F\u9593\u898B\u9577\u6771\u8ECA\u9580\u611B\u807D\u5B78\u8B93\u8A71\u865F\u767C\u9EDE\u7121\u73FE\u9AD4\u7D93\u96FB\u5BE6\u6A23\u8072\u8B8A\u96E2\u6C23\u5922\u7D66\u89BA\u7576\u6B61\u967D\u6200\u908A\u982D\u6DDA\u8AB0\u6B72\u9060\u55CE\u842C\u96E3\u5BEB\u61C9\u8B80\u61B6\u6A02\u9EBC\u9E97\u50B7\u5C07\u7E3D\u7D50\u7D42\u7D05\u7DA0\u7DDA\u984F\u98A8\u98DB\u9CE5\u8B1D\u8A9E\u8ACB\u8A8D\u8B58\u71B1\u71C8\u9858\u7368\u5920\u7D00\u5E36\u6EFF\u975C\u8F15\u5225\u8166\u81C9\u61F7\u8B0A\u932F\u9846\u9663\u5834\u8B9A\u6DFA\u6EAB\u8A18\u6191\u8B77\u58DE\u6B78\u5ABD\u96A8\u9280\u805E\u614B\u865B\u9059';
 var JZ_SC = '\u4EEC\u4E2A\u8BF4\u8FD9\u4F1A\u5BF9\u65F6\u6765\u8FD8\u540E\u8FC7\u56FD\u5F00\u5173\u4E0E\u4E3A\u4ECE\u95EE\u95F4\u89C1\u957F\u4E1C\u8F66\u95E8\u7231\u542C\u5B66\u8BA9\u8BDD\u53F7\u53D1\u70B9\u65E0\u73B0\u4F53\u7ECF\u7535\u5B9E\u6837\u58F0\u53D8\u79BB\u6C14\u68A6\u7ED9\u89C9\u5F53\u6B22\u9633\u604B\u8FB9\u5934\u6CEA\u8C01\u5C81\u8FDC\u5417\u4E07\u96BE\u5199\u5E94\u8BFB\u5FC6\u4E50\u4E48\u4E3D\u4F24\u5C06\u603B\u7ED3\u7EC8\u7EA2\u7EFF\u7EBF\u989C\u98CE\u98DE\u9E1F\u8C22\u8BED\u8BF7\u8BA4\u8BC6\u70ED\u706F\u613F\u72EC\u591F\u7EAA\u5E26\u6EE1\u9759\u8F7B\u522B\u8111\u8138\u6000\u8C0E\u9519\u9897\u9635\u573A\u8D5E\u6D45\u6E29\u8BB0\u51ED\u62A4\u574F\u5F52\u5988\u968F\u94F6\u95FB\u6001\u865A\u9065';
 function jzDetectLangText(text) {
-    var kana = 0, hangul = 0, han = 0, tc = 0, sc = 0, latin = 0, i, u, c;
+    var kana = 0, hangul = 0, han = 0, tc = 0, sc = 0, latin = 0, vi = 0, i, u, c;
     text = String(text || '');
     for (i = 0; i < text.length; i++) {
         u = text.charCodeAt(i); c = text.charAt(i);
-        if ((u >= 0x41 && u <= 0x5a) || (u >= 0x61 && u <= 0x7a) || (u >= 0xc0 && u <= 0x24f && u !== 0xd7 && u !== 0xf7) || (u >= 0xff21 && u <= 0xff3a) || (u >= 0xff41 && u <= 0xff5a)) latin++;
+        if ((u >= 0x41 && u <= 0x5a) || (u >= 0x61 && u <= 0x7a) || (u >= 0xc0 && u <= 0x24f && u !== 0xd7 && u !== 0xf7) || (u >= 0x1ea0 && u <= 0x1ef9) || (u >= 0xff21 && u <= 0xff3a) || (u >= 0xff41 && u <= 0xff5a)) {
+            latin++;
+            if ((u >= 0x1ea0 && u <= 0x1ef9) || '\u0103\u0111\u01A1\u01B0\u0102\u0110\u01A0\u01AF'.indexOf(c) >= 0) vi++;   // letters only Vietnamese uses
+        }
         else if ((u >= 0x3041 && u <= 0x30ff && u !== 0x30fb && u !== 0x30fc) || (u >= 0xff66 && u <= 0xff9d)) kana++;
         else if ((u >= 0xac00 && u <= 0xd7a3) || (u >= 0x1100 && u <= 0x11ff) || (u >= 0x3130 && u <= 0x318f)) hangul++;
         else if ((u >= 0x4e00 && u <= 0x9fff) || (u >= 0x3400 && u <= 0x4dbf)) { han++; if (JZ_TC.indexOf(c) >= 0) tc++; if (JZ_SC.indexOf(c) >= 0) sc++; }
     }
-    if (latin >= 6 && latin >= (latin + (kana + hangul + han) * 3) * 0.9) return 'en';   // almost only Latin letters (English / romaji)
+    if (latin >= 6 && latin >= (latin + (kana + hangul + han) * 3) * 0.9) return vi >= 2 ? 'vi' : 'en';   // almost only Latin letters (English / romaji)
     if (hangul >= 2 && hangul > kana) return 'ko';
     if (kana >= 2 || (kana > 0 && kana >= han * 0.03)) return 'ja';
     if (han >= 2 && (tc || sc)) return tc >= sc ? 'zh-Hant' : 'zh-Hans';
@@ -879,7 +895,7 @@ function jzPhraseChunks(words) {
     var out = [], cur = [], letters = 0, i, w, m;
     function flush() { if (cur.length) out.push(cur.join(' ')); cur = []; letters = 0; }
     for (i = 0; i < words.length; i++) {
-        w = words[i]; m = String(w).match(/[A-Za-z\u00c0-\u024f0-9]/g);
+        w = words[i]; m = String(w).match(/[A-Za-z\u00c0-\u024f\u1e00-\u1eff0-9]/g);
         cur.push(w); letters += m ? m.length : 0;
         if (letters >= 9 || cur.length >= 3 || /[,.;:!?]$/.test(w)) flush();
     }
@@ -953,7 +969,7 @@ function jzMakePlan(o) {
         }
         var nch = jzCount(ln.text), visEnd = Math.min(e0, s0 + Math.max(3.6, nch * 0.5 + 1.2)), D = visEnd - s0;
         plan.lines.push({ index: li, text: ln.text, start: s0, end: e0, visEnd: visEnd, note: ln.note, impact: ln.impact });
-        var chunks = ln.manual || (plan.lang === 'en' ? jzPhraseChunks(jzChunk(ln.text)) : jzChunk(ln.text)), L = jzLerp(1.3, 0.5, fx.density), nC = Math.round(D / L);
+        var chunks = ln.manual || (jzIsLatinLang(plan.lang) ? jzPhraseChunks(jzChunk(ln.text)) : jzChunk(ln.text)), L = jzLerp(1.3, 0.5, fx.density), nC = Math.round(D / L);
         var maxC = chunks.length + (chunks.length >= 2 && D > 2 ? 1 : 0); nC = jzClamp(nC, 1, Math.max(1, maxC));
         if (zones) nC = Math.max(1, Math.min(nC, Math.floor(chunks.length / 2)));   // \u4E2D\u592E\u3092\u7A7A\u3051\u308B: \u2265 2 words per cut (each cut is split in two)
         var nG = Math.min(nC, chunks.length), groups = [];
@@ -35718,8 +35734,8 @@ function jzUI(thisObj) {
     var cHor = gSw.add('checkbox', undefined, '\u30DB\u30E9\u30FC\u306E\u6F14\u51FA\u3082\u4F7F\u3046'); cHor.value = jzGet('horror', '0') === '1';
     cHor.helpTip = '\u4E0D\u6C17\u5473\u306A\u96F0\u56F2\u6C17\u306E\u90E8\u54C1\uFF08\u7D0450\uFF09\u3068\u914D\u8272\u30BB\u30C3\u30C83\u3002\u30AA\u30F3\u306B\u3059\u308B\u3068\u3001\u304A\u307E\u304B\u305B\u306E\u96F0\u56F2\u6C17\u306B\u300C\u30DB\u30E9\u30FC\u300D\u304C\u52A0\u308F\u308A\u307E\u3059\uFF08\u30DB\u30E9\u30FC\u306E\u90E8\u54C1\u306F\u96F0\u56F2\u6C17\u304C\u300C\u30DB\u30E9\u30FC\u300D\u306E\u3068\u304D\u3060\u3051\u4F7F\u3044\u307E\u3059\uFF09';
     var gLang = gSw.add('group'); gLang.spacing = 4; gLang.add('statictext', undefined, '\u6B4C\u8A5E\u306E\u8A00\u8A9E');
-    var JZ_LANG_KEYS = ['auto', 'ja', 'zh-Hant', 'zh-Hans', 'ko', 'en'];
-    var ddLang = gLang.add('dropdownlist', undefined, ['\u81EA\u52D5\u5224\u5B9A', '\u65E5\u672C\u8A9E', '\u7E41\u9AD4\u4E2D\u6587', '\u7B80\u4F53\u4E2D\u6587', '\uD55C\uAD6D\uC5B4', 'English']); ddLang.selection = parseInt(jzGet('lang', '0'), 10) || 0;
+    var JZ_LANG_KEYS = ['auto', 'ja', 'zh-Hant', 'zh-Hans', 'ko', 'en', 'vi'];
+    var ddLang = gLang.add('dropdownlist', undefined, ['\u81EA\u52D5\u5224\u5B9A', '\u65E5\u672C\u8A9E', '\u7E41\u9AD4\u4E2D\u6587', '\u7B80\u4F53\u4E2D\u6587', '\uD55C\uAD6D\uC5B4', 'English', 'Ti\u1EBFng Vi\u1EC7t']); ddLang.selection = parseInt(jzGet('lang', '0'), 10) || 0;
     ddLang.helpTip = '\u4E2D\u56FD\u8A9E\uFF08\u7E41\u4F53\u5B57\u30FB\u7C21\u4F53\u5B57\uFF09\u3084\u97D3\u56FD\u8A9E\u306E\u6B4C\u8A5E\u306F\u3001\u305D\u306E\u6587\u5B57\u3092\u6301\u3064\u66F8\u4F53\u3067\u7D44\u307F\u307E\u3059\uFF08\u5404\u30B9\u30BF\u30A4\u30EB\u306E\u66F8\u4F53\u306E\u96F0\u56F2\u6C17\u306B\u8FD1\u3044\u3082\u306E\u306B\u7F6E\u304D\u63DB\u3048\uFF09\u3002\u81EA\u52D5\u5224\u5B9A\u306F\u304B\u306A\u30FB\u30CF\u30F3\u30B0\u30EB\u30FB\u7E41\u4F53\u5B57\uFF0F\u7C21\u4F53\u5B57\u306B\u7279\u6709\u306E\u5B57\u304B\u3089\u5224\u65AD\u3057\u307E\u3059';
     function switches() { return { extra: cExtra.value, wa: cWa.value, typo: cTypo.value, kinetic: cKin.value, horror: cHor.value, lang: JZ_LANG_KEYS[ddLang.selection ? ddLang.selection.index : 0] }; }
     var gS = t1.add('group'); gS.add('statictext', undefined, '\u30B9\u30BF\u30A4\u30EB');

@@ -21,10 +21,11 @@ J.defaultProject = () => ({
   horror: false,                  // parts sets (independent of 'extra'): ホラー (also enables the ホラー mood)
   typo: true,                     // 文字PV系 typographic parts
   kinetic: true,                  // キネティック parts
-  lang: 'auto',                   // 歌詞の言語: 'auto' | 'ja' | 'zh-Hant' | 'zh-Hans' | 'ko' — picks the faces each font key is drawn with
+  lang: 'auto',                   // 歌詞の言語: 'auto' | 'ja' | 'zh-Hant' | 'zh-Hans' | 'ko' | 'en' | 'vi' — picks the faces each font key is drawn with
   keyBg: 'off',                   // 合成用の背景: 'off' | 'green' (グリーンバック) | 'black' (ブラックバック)
   unify: false,                   // 統一感: part palettes, repeats shown the same way, キメ, モーフ, 太さ
   typeset: false,                 // 文字整列: kana tracking, small particles / big first character, Latin sizing, 0.2 s lead, restraint
+  recap: true,                    // 行のまとめカット: a line with time to spare ends with a cut showing the whole line again
   centerDir: 'tb',                // 中央を空ける on tall frames: 'tb' = top / bottom, 'lr' = left / right
   centerFree: false,              // 中央を空ける: lay the cuts out in side bands (left / right or top / bottom) around a character
   seed: 20260922,
@@ -49,7 +50,7 @@ J.stepDur = (fx, fps) => { const k = J.komaOf(fx); return k > 0 ? 1 / k : 1 / (f
 J.parseLyrics = (raw) => {
   const lines = []; const meta = {};
   let pendingGap = false;
-  const rows = String(raw || '').replace(/\r/g, '').split('\n');
+  const rows = String(raw || '').normalize('NFC').replace(/\r/g, '').split('\n');   // NFC: Vietnamese typed as letter + combining tone mark
   for (let ri = 0; ri < rows.length; ri++) {
     const s0 = rows[ri].trim();
     if (!s0) { if (lines.length) pendingGap = true; continue; }
@@ -121,7 +122,7 @@ const segType = s => {
   if ([...s].some(c => J.isKanji(c))) return 'K';
   if ([...s].every(c => J.isHira(c) || c === 'ー')) return 'H';
   if ([...s].every(c => J.isKata(c) || c === 'ー')) return 'T';
-  if (/[A-Za-z0-9]/.test(s)) return 'L';
+  if (J.LATIN_RE.test(s)) return 'L';
   return 'O';
 };
 J.segments = (text) => {
@@ -137,8 +138,9 @@ J.segments = (text) => {
   return out;
 };
 /* Latin / Hangul helpers: words are joined with a space, except right after a dash (never- + ending → never-ending) */
-const WORDCH = /[A-Za-z\u00c0-\u024f0-9\uac00-\ud7af\u1100-\u11ff\u3130-\u318f]/;
-J.isWordLike = t => /^[A-Za-z\u00c0-\u024f0-9\uac00-\ud7af'’.,!?‐–—-]+$/.test(t) && WORDCH.test(t);
+const WORDCH = new RegExp('[' + J.LATIN_CLASS + '\\uac00-\\ud7af\\u1100-\\u11ff\\u3130-\\u318f]');
+const WORDLIKE = new RegExp('^[' + J.LATIN_CLASS + "\\uac00-\\ud7af'’.,!?‐–—-]+$");
+J.isWordLike = t => WORDLIKE.test(t) && WORDCH.test(t);
 J.joinWords = arr => {
   const latin = /[A-Za-z]/.test(arr.join('')), HG = /[\uac00-\ud7af]/;
   return arr.reduce((acc, w, i) => {
@@ -192,7 +194,7 @@ J.phraseChunks = (words) => {
   const out = []; let cur = [], letters = 0;
   const flush = () => { if (cur.length) out.push(J.joinWords(cur)); cur = []; letters = 0; };
   for (const w of words) {
-    const n = (w.match(/[A-Za-z\u00c0-\u024f0-9]/g) || []).length;
+    const n = [...w].filter(J.isLatin).length;
     cur.push(w); letters += n;
     if (letters >= 9 || cur.length >= 3 || /[,.;:!?]$/.test(w)) flush();
   }
@@ -348,7 +350,7 @@ J.plan = (project, audio) => {
     const visEnd = Math.min(e, s + Math.max(3.6, n * 0.5 + 1.2));
     const D = visEnd - s;
     plan.lines.push({ index: li, src: ln.src, lrc: ln.lrc, text: ln.text, start: s, end: e, visEnd, note: ln.note, impact: ln.impact, emph: ln.emph, chunks: null, seed: lineSeed });
-    const chunks = ln.manual || (plan.lang === 'en' ? J.phraseChunks(J.chunkText(ln.text)) : J.chunkText(ln.text));
+    const chunks = ln.manual || (J.isLatinLang(plan.lang) ? J.phraseChunks(J.chunkText(ln.text)) : J.chunkText(ln.text));
     plan.lines[li].chunks = chunks;
     const L = J.lerp(1.3, 0.5, fx.density);
     let nC = Math.round(D / L);
@@ -367,7 +369,7 @@ J.plan = (project, audio) => {
     const nG = Math.min(nC, chunks2.length);
     if (nG <= 1) groups = [ln.text];
     else groups = partition(chunks2, nG).map(g => J.joinWords(g));
-    const recap = !fixedN && nC > groups.length && groups.length >= 2;
+    const recap = project.recap !== false && !fixedN && nC > groups.length && groups.length >= 2;
     let units = groups.map(g => ({ text: g, w: [...g].length + 1.6 }));
     if (recap) units.push({ text: ln.text, w: (units.reduce((a, u) => a + u.w, 0) / units.length) * 1.25, recap: true });
     // a locked line keeps its own cuts too (the cut count would otherwise follow the 細かさ slider or おまかせ)
@@ -713,11 +715,12 @@ function makeUnify(lines, C) {
 /* 中央を空ける: one scene, the lyric split in two — 「花が」 in the left (top) band, 「咲いた」 in the right (bottom) one.
    Both halves use the same layout, motion, decorations and camera (the same random draws), so it reads as one picture
    with the centre left for the character; the second half follows a beat later. */
+const ONE_WORD = new RegExp('^[' + J.LATIN_CLASS + "'’-]+$");
 function splitHalf(text, lang) {
   const t = String(text || '').trim();
   const n = [...t.replace(/\s+/g, '')].length;
   // between words, as near the middle as possible (「花が」｜「咲いた」, "Good night," | "see you tomorrow")
-  const words = (lang === 'en' ? J.phraseChunks(J.chunkText(t)) : J.chunkText(t)).map(w => String(w));
+  const words = (J.isLatinLang(lang) ? J.phraseChunks(J.chunkText(t)) : J.chunkText(t)).map(w => String(w));
   if (words.length >= 2) {
     const L = w => [...w.replace(/\s+/g, '')].length, total = words.reduce((a2, w) => a2 + L(w), 0);
     let acc = 0, best = 1, bd = 1e9;
@@ -726,7 +729,7 @@ function splitHalf(text, lang) {
     return [words.slice(0, best).join(sep).trim(), words.slice(best).join(sep).trim()];
   }
   // one word: short ones (and single English words) stand on both sides; longer ones split near the middle
-  if (n <= 3 || /^[A-Za-z0-9'’-]+$/.test(t)) return [t, t];
+  if (n <= 3 || ONE_WORD.test(t)) return [t, t];
   const two = splitToCount([t], 2);
   if (two.length < 2) return [t, t];
   let a = two[0].trim(), b = two.slice(1).join('').trim();

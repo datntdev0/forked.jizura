@@ -1,16 +1,18 @@
 /* ============================================================
    JIZURA — lyric language: auto-detection + per-language faces
    The styles are designed around Japanese fonts. For Chinese
-   (Traditional / Simplified) and Korean lyrics every font key is
-   drawn with a face that has the glyphs, chosen to keep the same
+   (Traditional / Simplified), Korean and Vietnamese lyrics every font
+   key is drawn with a face that has the glyphs, chosen to keep the same
    character (gothic → sans, mincho → serif, pop → rounded, …).
-   project.lang: 'auto' | 'ja' | 'zh-Hant' | 'zh-Hans' | 'ko'
+   project.lang: 'auto' | 'ja' | 'zh-Hant' | 'zh-Hans' | 'ko' | 'en' | 'vi'
    ============================================================ */
 (() => {
 'use strict';
 
-J.LANGS = ['auto', 'ja', 'zh-Hant', 'zh-Hans', 'ko', 'en'];
-J.LANG_LABEL = { auto: '自動判定', ja: '日本語', 'zh-Hant': '繁體中文', 'zh-Hans': '简体中文', ko: '한국어', en: 'English' };
+J.LANGS = ['auto', 'ja', 'zh-Hant', 'zh-Hans', 'ko', 'en', 'vi'];
+J.LANG_LABEL = { auto: '自動判定', ja: '日本語', 'zh-Hant': '繁體中文', 'zh-Hans': '简体中文', ko: '한국어', en: 'English', vi: 'Tiếng Việt' };
+/* languages written in Latin letters: cut into short phrases, not single characters */
+J.isLatinLang = l => l === 'en' || l === 'vi';
 
 /* characters that differ between Traditional and Simplified Chinese (same order in both strings) */
 const TC = '們個說這會對時來還後過國開關與為從問間見長東車門愛聽學讓話號發點無現體經電實樣聲變離氣夢給覺當歡陽戀邊頭淚誰歲遠嗎萬難寫應讀憶樂麼麗傷將總結終紅綠線顏風飛鳥謝語請認識熱燈願獨夠紀帶滿靜輕別腦臉懷謊錯顆陣場讚淺溫記憑護壞歸媽隨銀聞態虛遙';
@@ -18,13 +20,17 @@ const SC = '们个说这会对时来还后过国开关与为从问间见长东�
 const TCSET = new Set([...TC]), SCSET = new Set([...SC]);
 // a few of the "Simplified" forms are also Japanese shinjitai (会 対 来 …) — kana decides Japanese first, so that is harmless
 
-/* which language are these lyrics in? (almost only Latin letters → en (English / romaji), kana → ja, hangul → ko,
-   Han only → Traditional / Simplified by the distinctive forms, Traditional when there are none) */
-J.detectLang = (text) => {
-  let kana = 0, hangul = 0, han = 0, tc = 0, sc = 0, latin = 0;
-  for (const c of String(text || '')) {
+/* letters only Vietnamese uses: ă đ ơ ư and the letters with a tone mark below / hook above (U+1EA0–1EF9) */
+const VI_ONLY = /[ăđơưĂĐƠƯ\u1ea0-\u1ef9]/;
+/* which language are these lyrics in? (almost only Latin letters → vi with Vietnamese letters, else en (English / romaji),
+   kana → ja, hangul → ko, Han only → Traditional / Simplified by the distinctive forms).
+   ui = the lyric language of the interface (J.uiLang): it settles what the letters leave open — Latin lyrics in the
+   Vietnamese edition, Han without distinctive forms in the Simplified edition, too little text to tell */
+J.detectLang = (text, ui) => {
+  let kana = 0, hangul = 0, han = 0, tc = 0, sc = 0, latin = 0, vi = 0;
+  for (const c of String(text || '').normalize('NFC')) {
     const u = c.codePointAt(0);
-    if ((u >= 0x41 && u <= 0x5a) || (u >= 0x61 && u <= 0x7a) || (u >= 0xc0 && u <= 0x24f && u !== 0xd7 && u !== 0xf7) || (u >= 0xff21 && u <= 0xff5a && (u <= 0xff3a || u >= 0xff41))) latin++;
+    if ((u >= 0x41 && u <= 0x5a) || (u >= 0x61 && u <= 0x7a) || (u >= 0xc0 && u <= 0x24f && u !== 0xd7 && u !== 0xf7) || (u >= 0x1ea0 && u <= 0x1ef9) || (u >= 0xff21 && u <= 0xff5a && (u <= 0xff3a || u >= 0xff41))) { latin++; if (VI_ONLY.test(c)) vi++; }
     else if ((u >= 0x3041 && u <= 0x30ff && u !== 0x30fb && u !== 0x30fc) || (u >= 0xff66 && u <= 0xff9d)) kana++;
     else if ((u >= 0xac00 && u <= 0xd7a3) || (u >= 0x1100 && u <= 0x11ff) || (u >= 0x3130 && u <= 0x318f)) hangul++;
     else if ((u >= 0x4e00 && u <= 0x9fff) || (u >= 0x3400 && u <= 0x4dbf) || (u >= 0x20000 && u <= 0x2ffff)) {
@@ -35,18 +41,23 @@ J.detectLang = (text) => {
   }
   // a CJK character carries about as much as a short word — weigh it ×3 against single Latin letters
   const cjk = kana + hangul + han;
-  if (latin >= 6 && latin >= (latin + cjk * 3) * 0.9) return 'en';
+  if (latin >= 6 && latin >= (latin + cjk * 3) * 0.9) return vi >= 2 || ui === 'vi' ? 'vi' : 'en';
   if (hangul >= 2 && hangul > kana) return 'ko';
   if (kana >= 2 || (kana > 0 && kana >= han * 0.03)) return 'ja';
   // Han without kana is Chinese even when no distinctive form appears (the shared forms render fine in the TC faces)
-  if (han >= 2) return sc > tc ? 'zh-Hans' : 'zh-Hant';
-  return 'ja';
+  if (han >= 2) return sc > tc || (sc === tc && ui === 'zh-Hans') ? 'zh-Hans' : 'zh-Hant';
+  return J.LANG_FACES[ui] ? ui : 'ja';
+};
+/* the lyric language of the edition in use (<html lang>): 'vi', 'ko', 'zh-Hans', … or null (ja / en / id keep the styles' faces) */
+J.uiLang = () => {
+  const h = typeof document !== 'undefined' && document.documentElement ? document.documentElement.lang : '';
+  return J.LANG_FACES[h] ? h : null;
 };
 /* project → the language actually used */
 J.resolveLang = (project) => {
   const l = project && project.lang;
   if (l && l !== 'auto' && J.LANG_LABEL[l]) return l;
-  return J.detectLang(((project && project.lyrics) || '') + ' ' + ((project && project.title) || ''));
+  return J.detectLang(((project && project.lyrics) || '') + ' ' + ((project && project.title) || ''), J.uiLang());
 };
 
 /* per-language faces: key → [family, weight, Google Fonts spec]; keys left out keep their Japanese face
@@ -55,6 +66,7 @@ const F = (family, weight, gf) => ({ family, weight, gf });
 const NSTC = 'Noto+Sans+TC:wght@300;500;700;900', NSRTC = 'Noto+Serif+TC:wght@300;500;700;800;900';
 const NSSC = 'Noto+Sans+SC:wght@300;500;700;900', NSRSC = 'Noto+Serif+SC:wght@300;500;700;800;900';
 const NSKR = 'Noto+Sans+KR:wght@300;500;700;900', NSRKR = 'Noto+Serif+KR:wght@300;500;700;800;900';
+const BVP = 'Be+Vietnam+Pro:wght@300;500;700;900', LORA = 'Lora:wght@500;700', PFD = 'Playfair+Display:wght@800;900';
 J.LANG_FACES = {
   'zh-Hant': {
     sans: F('Noto Sans TC', 500, NSTC), serif: F('Noto Serif TC', 500, NSRTC),
@@ -98,6 +110,19 @@ J.LANG_FACES = {
       reggae: F('Black Han Sans', 400, 'Black+Han+Sans'), rampart: F('Black Han Sans', 400, 'Black+Han+Sans'), potta: F('Nanum Brush Script', 400, 'Nanum+Brush+Script'),
     },
   },
+  // Vietnamese: only the keys whose Japanese face lacks the Vietnamese letters (Noto Sans / Serif JP, Dela Gothic One,
+  // M PLUS Rounded 1c, IBM Plex Mono and Potta One have them and stay)
+  vi: {
+    sans: F('Be Vietnam Pro', 500, BVP), serif: F('Lora', 500, LORA),
+    fbSans: '"Be Vietnam Pro","Noto Sans","Segoe UI",Arial', fbSerif: '"Lora","Noto Serif","Times New Roman"',
+    map: {
+      zenkaku: F('Be Vietnam Pro', 900, BVP), sansui: F('Be Vietnam Pro', 500, BVP),
+      mincho_black: F('Playfair Display', 900, PFD), tokumin: F('Playfair Display', 800, PFD), shippori: F('Lora', 700, LORA),
+      pop: F('Paytone One', 400, 'Paytone+One'), kiwi: F('Baloo 2', 600, 'Baloo+2:wght@600'), dot: F('VT323', 400, 'VT323'),
+      klee: F('Patrick Hand', 400, 'Patrick+Hand'), brush: F('Dancing Script', 700, 'Dancing+Script:wght@700'),
+      reggae: F('Bungee', 400, 'Bungee'), rampart: F('Bungee Shade', 400, 'Bungee+Shade'),
+    },
+  },
 };
 
 /* the language fonts are drawn in right now (set by the planner / renderer from plan.lang) */
@@ -115,6 +140,7 @@ const ZH_T = '的一是不了人我在有他這中大來上國個到說們為子
 const ZH_S = '的一是不了人我在有他这中大来上国个到说们为子和你地出道也时年得就那要下以生会自着去之过家学对可她里后小么心多天而能好都然没日于起还发成事只作当想看文无开手十用主行方又如前所本见经头面公同三已老从动两长知民样现分将外但身些与高意进把法此实回二理美点月明其种声全工己话儿者向情部正名定女问力机给等几很最间新什打便位因重被走电四第门相次东海口使西再平真听世气信北少关爱梦光影空夜星雨泪恋花风';
 const KO = '가나다라마바사아자차카타파하거너더러머버서어저처커터퍼허고노도로모보소오조초코토포호구누두루무부수우주추쿠투푸후그느드르므브스으즈츠크트프흐기니디리미비시이지치키티피히사랑별빛마음노래하늘바람꿈눈물너나우리';
 const EN_U = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', EN_L = 'abcdefghijklmnopqrstuvwxyz', DIG = '0123456789', SYM = '＃＊＋＝／＜＞※◇◆□△○';
+const VI_U = 'AĂÂBCDĐEÊGHIKLMNOÔƠPQRSTUƯVXY', VI_L = 'aăâbcdđeêghiklmnoôơpqrstuưvxyáàảãạấầẩẫậắằẳẵặéèẻẽẹếềểễệíìỉĩịóòỏõọốồổỗộớờởỡợúùủũụứừửữựýỳỷỹỵ';
 J.POOLS = {
   ja: { kana: 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン', hira: 'あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをん',
     half: 'ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜﾝ0123456789', reel: '夢光影空夜星雨涙心恋声花月風愛嘘罪色音海アイウエオカキクケコサシスセソ0123456789',
@@ -124,6 +150,7 @@ J.POOLS = {
   'zh-Hans': { kana: ZH_S, hira: ZH_S, half: ZH_S.slice(0, 60) + DIG, reel: ZH_S.slice(-40) + DIG, scramble: ZH_S + '★◆▲●■※＃＄％＆' + DIG, signs: ZH_S.slice(0, 60) + SYM + '01' },
   ko: { kana: KO, hira: KO, half: KO.slice(0, 60) + DIG, reel: KO.slice(-30) + DIG, scramble: KO + '★◆▲●■※＃＄％＆' + DIG, signs: KO.slice(0, 60) + SYM + '01' },
   en: { kana: EN_U, hira: EN_L, half: '0123456789ABCDEF', reel: EN_U + DIG, scramble: EN_U + EN_L + '★◆▲●■#$%&' + DIG, signs: EN_U + '#*+=/<>' + '01' },
+  vi: { kana: VI_U, hira: VI_L, half: '0123456789ABCDEF', reel: VI_U + DIG, scramble: VI_U + VI_L + '★◆▲●■#$%&' + DIG, signs: VI_U + '#*+=/<>' + '01' },
 };
 J.pool = (kind) => { const P = J.POOLS[J.lang] || J.POOLS.ja; return P[kind] || J.POOLS.ja[kind]; };
 const SERIF_KINDS = { mincho: 1, brush: 1, hand: 1 };
@@ -149,5 +176,5 @@ J.langBaseFaces = (keys) => {
   return out;
 };
 /* segmenter locale for chunking */
-J.segLocale = () => (J.lang === 'zh-Hant' ? 'zh-Hant' : J.lang === 'zh-Hans' ? 'zh-Hans' : J.lang === 'ko' ? 'ko' : J.lang === 'en' ? 'en' : 'ja');
+J.segLocale = () => (J.lang === 'zh-Hant' || J.lang === 'zh-Hans' || J.lang === 'ko' || J.isLatinLang(J.lang) ? J.lang : 'ja');
 })();

@@ -49,7 +49,7 @@ function jzRoleOf(key) {
 // resolve: explicit user role font > key candidates that exist > role default
 // JZ_FONT_MISSING collects the keys whose own typeface (the browser's Google Font) is not installed, for the build report
 var JZ_FONT_MISSING = {}, JZ_FONT_NOAPI = false;
-// ---- lyric language (plan.lang from the browser): Chinese / Korean lyrics are drawn with faces that have their glyphs.
+// ---- lyric language (plan.lang from the browser): Chinese / Korean / Vietnamese lyrics are drawn with faces that have their glyphs.
 // Per language: key → PostScript candidates (the browser's Google Font first, then OS fonts that always cover the script).
 var JZ_LANG = 'ja';
 var JZ_LANG_SYS = {
@@ -58,7 +58,9 @@ var JZ_LANG_SYS = {
     'zh-Hans': { sansB: ['PingFangSC-Semibold', 'MicrosoftYaHei-Bold', 'NotoSansCJKsc-Bold', 'SourceHanSansSC-Bold'], sans: ['PingFangSC-Regular', 'MicrosoftYaHei', 'NotoSansCJKsc-Regular', 'SourceHanSansSC-Regular'],
                  serifB: ['STSongti-SC-Bold', 'NotoSerifCJKsc-Bold', 'SourceHanSerifSC-Bold', 'SimSun'], serif: ['STSongti-SC-Regular', 'NotoSerifCJKsc-Regular', 'SourceHanSerifSC-Regular', 'SimSun'] },
     ko: { sansB: ['AppleSDGothicNeo-Bold', 'MalgunGothicBold', 'NotoSansCJKkr-Bold', 'SourceHanSansKR-Bold'], sans: ['AppleSDGothicNeo-Regular', 'MalgunGothic', 'NotoSansCJKkr-Regular', 'SourceHanSansKR-Regular'],
-          serifB: ['AppleMyungjo', 'NotoSerifCJKkr-Bold', 'SourceHanSerifKR-Bold', 'Batang'], serif: ['AppleMyungjo', 'NotoSerifCJKkr-Regular', 'SourceHanSerifKR-Regular', 'Batang'] }
+          serifB: ['AppleMyungjo', 'NotoSerifCJKkr-Bold', 'SourceHanSerifKR-Bold', 'Batang'], serif: ['AppleMyungjo', 'NotoSerifCJKkr-Regular', 'SourceHanSerifKR-Regular', 'Batang'] },
+    vi: { sansB: ['BeVietnamPro-Bold', 'SegoeUI-Bold', 'Arial-BoldMT'], sans: ['BeVietnamPro-Medium', 'SegoeUI', 'ArialMT'],
+          serifB: ['Lora-Bold', 'TimesNewRomanPS-BoldMT'], serif: ['Lora-Medium', 'TimesNewRomanPSMT'] }
 };
 // [family (for messages), own PostScript names…, system group]
 var JZ_LANG_FONTS = {
@@ -100,6 +102,15 @@ var JZ_LANG_FONTS = {
         pop: ['Do Hyeon', 'DoHyeon-Regular', 'sansB'], kiwi: ['Gowun Dodum', 'GowunDodum-Regular', 'sans'],
         klee: ['Gowun Batang', 'GowunBatang-Bold', 'serifB'], brush: ['Nanum Brush Script', 'NanumBrush', 'NanumBrushScript-Regular', 'serifB'],
         reggae: ['Black Han Sans', 'BlackHanSans-Regular', 'sansB'], rampart: ['Black Han Sans', 'BlackHanSans-Regular', 'sansB'], potta: ['Nanum Brush Script', 'NanumBrush', 'NanumBrushScript-Regular', 'sansB']
+    },
+    // Vietnamese: only the keys whose Japanese face lacks the Vietnamese letters (same faces as the browser, src/02b_lang.js)
+    vi: {
+        zenkaku: ['Be Vietnam Pro', 'BeVietnamPro-Black', 'sansB'], sansui: ['Be Vietnam Pro', 'BeVietnamPro-Medium', 'sans'],
+        mincho_black: ['Playfair Display', 'PlayfairDisplay-Black', 'serifB'], tokumin: ['Playfair Display', 'PlayfairDisplay-ExtraBold', 'serifB'],
+        shippori: ['Lora', 'Lora-Bold', 'serifB'],
+        pop: ['Paytone One', 'PaytoneOne-Regular', 'sansB'], kiwi: ['Baloo 2', 'Baloo2-SemiBold', 'sans'], dot: ['VT323', 'VT323-Regular', 'sans'],
+        klee: ['Patrick Hand', 'PatrickHand-Regular', 'sans'], brush: ['Dancing Script', 'DancingScript-Bold', 'serifB'],
+        reggae: ['Bungee', 'Bungee-Regular', 'sansB'], rampart: ['Bungee Shade', 'BungeeShade-Regular', 'sansB']
     }
 };
 // random characters in the lyric's own writing system (same sets as the browser's J.pool — issue #16)
@@ -108,7 +119,8 @@ var JZ_POOLS = {
     'zh-Hant': { kana: '的一是不了人我在有他這中大來上國個到說們為子和你地出道也時年得就那要下以生會自著去之過家學對可她裡後小麼心多天而能好都然沒日於起還發成事只作當想看文無開手十用主行方又如前所本見經頭面公同三已老從動兩長知民樣現分將外但身些與高意進把法此實回二理美點月明其種聲全工己話兒者向情部正名定女問力機給等幾很最間新什打便位因重被走電四第門相次東海口使西再平真聽世氣信北少關愛夢光影空夜星雨淚戀花風', hira: '的一是不了人我在有他這中大來上國個到說們為子和你地出道也時年得就那要下以生會自著去之過家學對可她裡後小麼心多天而能好都然沒日於起還發成事只作當想看文無開手十用主行方又如前所本見經頭面公同三已老從動兩長知民樣現分將外但身些與高意進把法此實回二理美點月明其種聲全工己話兒者向情部正名定女問力機給等幾很最間新什打便位因重被走電四第門相次東海口使西再平真聽世氣信北少關愛夢光影空夜星雨淚戀花風' },
     'zh-Hans': { kana: '的一是不了人我在有他这中大来上国个到说们为子和你地出道也时年得就那要下以生会自着去之过家学对可她里后小么心多天而能好都然没日于起还发成事只作当想看文无开手十用主行方又如前所本见经头面公同三已老从动两长知民样现分将外但身些与高意进把法此实回二理美点月明其种声全工己话儿者向情部正名定女问力机给等几很最间新什打便位因重被走电四第门相次东海口使西再平真听世气信北少关爱梦光影空夜星雨泪恋花风', hira: '的一是不了人我在有他这中大来上国个到说们为子和你地出道也时年得就那要下以生会自着去之过家学对可她里后小么心多天而能好都然没日于起还发成事只作当想看文无开手十用主行方又如前所本见经头面公同三已老从动两长知民样现分将外但身些与高意进把法此实回二理美点月明其种声全工己话儿者向情部正名定女问力机给等几很最间新什打便位因重被走电四第门相次东海口使西再平真听世气信北少关爱梦光影空夜星雨泪恋花风' },
     ko: { kana: '가나다라마바사아자차카타파하거너더러머버서어저처커터퍼허고노도로모보소오조초코토포호구누두루무부수우주추쿠투푸후그느드르므브스으즈츠크트프흐기니디리미비시이지치키티피히사랑별빛마음노래하늘바람꿈눈물너나우리', hira: '가나다라마바사아자차카타파하거너더러머버서어저처커터퍼허고노도로모보소오조초코토포호구누두루무부수우주추쿠투푸후그느드르므브스으즈츠크트프흐기니디리미비시이지치키티피히사랑별빛마음노래하늘바람꿈눈물너나우리' },
-    en: { kana: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', hira: 'abcdefghijklmnopqrstuvwxyz' }
+    en: { kana: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', hira: 'abcdefghijklmnopqrstuvwxyz' },
+    vi: { kana: 'AĂÂBCDĐEÊGHIKLMNOÔƠPQRSTUƯVXY', hira: 'aăâbcdđeêghiklmnoôơpqrstuưvxyáàảãạấầẩẫậắằẳẵặéèẻẽẹếềểễệíìỉĩịóòỏõọốồổỗộớờởỡợúùủũụứừửữựýỳỷỹỵ' }
 };
 function jzPool(kind) { var P = JZ_POOLS[JZ_POOL_LANG] || JZ_POOLS.ja; return P[kind] || JZ_POOLS.ja[kind]; }
 var JZ_POOL_LANG = 'ja';
